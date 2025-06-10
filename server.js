@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
       id: 0,
       sender_id: connectionInfo.userId,
       type: type || 'chat-message',
-      json: { message },
+      json: { message, sender_id: connectionInfo.userId },
       timestamp,
       platform: platform || 'web'
     };
