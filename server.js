@@ -29,7 +29,7 @@ io.on('connection', (socket) => {
   // Handle joining a chat room
   socket.on('join_order_room', (data) => {
     const { orderId, userId, platform, type } = data;
-    
+
     if (!orderId || !userId) {
       socket.emit('error', { message: 'Order ID and User ID are required' });
       return;
@@ -38,7 +38,7 @@ io.on('connection', (socket) => {
     const room = `order_${orderId}`;
     socket.join(room);
     activeConnections.set(socket.id, { room, userId, platform, type });
-    
+
     console.log(`User ${userId} joined order room ${orderId}`);
     socket.emit('joined_order_room', { room, userId });
   });
@@ -53,18 +53,18 @@ io.on('connection', (socket) => {
 
     const { room, platform, type } = connectionInfo;
     const { message } = data;
-    
+
     if (!message) {
       if (callback) callback({ error: 'Message content is required' });
       return;
     }
 
-    const timestamp = new Date().toISOString();
+    const timestamp = Number(new Date());
     const messageData = {
       id: 0,
       sender_id: connectionInfo.userId,
       type: type || 'chat-message',
-      json: {message},
+      json: { message },
       timestamp,
       platform: platform || 'web'
     };
@@ -102,8 +102,8 @@ app.post('/api/send-order-message', (req, res) => {
   const { orderId, userId, message, platform = 'server', type = 'chat-message' } = req.body;
 
   if (!orderId || !userId || !message) {
-    return res.status(400).json({ 
-      error: 'Order ID, User ID, and message are required' 
+    return res.status(400).json({
+      error: 'Order ID, User ID, and message are required'
     });
   }
 
@@ -122,10 +122,10 @@ app.post('/api/send-order-message', (req, res) => {
   io.to(room).emit('new_order_message', messageData);
   console.log(`Server message sent to ${room}:`, messageData);
 
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Order message sent successfully',
-    data: messageData 
+    data: messageData
   });
 });
 
