@@ -128,7 +128,7 @@ async function saveMessageToDatabase(messageData) {
   console.log('Saving message to database:', messageData);
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3005;
 
 server.listen(PORT, () => {
   console.log(`Chat server running on port ${PORT}`);
