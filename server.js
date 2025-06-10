@@ -27,50 +27,63 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   // Handle joining a chat room
-  socket.on('join_room', (data) => {
-    const { roomId, userId } = data;
+  socket.on('join_order_room', (data) => {
+    const { orderId, userId, platform, type } = data;
     
-    if (!roomId || !userId) {
-      socket.emit('error', { message: 'Room ID and User ID are required' });
+    if (!orderId || !userId) {
+      socket.emit('error', { message: 'Order ID and User ID are required' });
       return;
     }
 
-    // Join the room
-    socket.join(roomId);
-    activeConnections.set(socket.id, { roomId, userId });
+    const room = `order_${orderId}`;
+    socket.join(room);
+    activeConnections.set(socket.id, { room, userId, platform, type });
     
-    console.log(`User ${userId} joined room ${roomId}`);
-    socket.emit('joined_room', { roomId, userId });
+    console.log(`User ${userId} joined order room ${orderId}`);
+    socket.emit('joined_order_room', { room, userId });
   });
 
-  // Handle sending messages
-  socket.on('send_message', async (data) => {
-    const { roomId, userId, message } = data;
-    
-    if (!roomId || !userId || !message) {
-      socket.emit('error', { message: 'Room ID, User ID, and message are required' });
+  // Handle sending order messages
+  socket.on('send_order_message', async (data, callback) => {
+    const connectionInfo = activeConnections.get(socket.id);
+    if (!connectionInfo) {
+      socket.emit('error', { message: 'Join a room before sending messages' });
       return;
     }
 
+    const { room, platform, type } = connectionInfo;
+    const { message } = data;
+    
+    if (!message) {
+      if (callback) callback({ error: 'Message content is required' });
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
     const messageData = {
       id: Date.now().toString(),
-      roomId,
-      userId,
+      room,
+      userId: connectionInfo.userId,
       message,
-      timestamp: new Date().toISOString()
+      type: type || 'chat-message',
+      timestamp,
+      platform: platform || 'web'
     };
 
-    // Broadcast message to all clients in the room
-    io.to(roomId).emit('new_message', messageData);
-    
-    console.log(`Message sent to room ${roomId}:`, messageData);
+    // Broadcast message to all clients in the order room
+    io.to(room).emit('new_order_message', messageData);
+    console.log(`Order message sent to ${room}:`, messageData);
 
-    // Save message to database (you can implement this API call)
-    try {
-      // Replace with your actual API endpoint
-      await saveMessageToDatabase(messageData);
-    } catch (error) {
-      console.error('Failed to save message:', error);
+    // Call callback immediately
+    if (callback) callback({ success: true });
+
+    // Save to database (skip if from server)
+    if (platform !== 'server') {
+      try {
+        await saveMessageToDatabase(messageData);
+      } catch (error) {
+        console.error('Failed to save message:', error);
+      }
     }
   });
 
@@ -78,40 +91,41 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const connection = activeConnections.get(socket.id);
     if (connection) {
-      console.log(`User ${connection.userId} disconnected from room ${connection.roomId}`);
+      console.log(`User ${connection.userId} disconnected from order room ${connection.room}`);
       activeConnections.delete(socket.id);
     }
     console.log('Client disconnected:', socket.id);
   });
 });
 
-// REST API endpoint to send messages from server
-app.post('/api/send-message', (req, res) => {
-  const { roomId, userId, message } = req.body;
+// REST API endpoint to send order messages from server
+app.post('/api/send-order-message', (req, res) => {
+  const { orderId, userId, message, platform = 'server', type = 'chat-message' } = req.body;
 
-  if (!roomId || !userId || !message) {
+  if (!orderId || !userId || !message) {
     return res.status(400).json({ 
-      error: 'Room ID, User ID, and message are required' 
+      error: 'Order ID, User ID, and message are required' 
     });
   }
 
+  const room = `order_${orderId}`;
   const messageData = {
     id: Date.now().toString(),
-    roomId,
+    room,
     userId,
     message,
+    type,
     timestamp: new Date().toISOString(),
-    fromServer: true
+    platform
   };
 
-  // Broadcast message to all clients in the room
-  io.to(roomId).emit('new_message', messageData);
-  
-  console.log(`Server message sent to room ${roomId}:`, messageData);
+  // Broadcast to order room
+  io.to(room).emit('new_order_message', messageData);
+  console.log(`Server message sent to ${room}:`, messageData);
 
   res.json({ 
     success: true, 
-    message: 'Message sent successfully',
+    message: 'Order message sent successfully',
     data: messageData 
   });
 });
@@ -121,17 +135,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Function to save message to database (implement your own logic)
+// Database saving function
 async function saveMessageToDatabase(messageData) {
-  // Replace this with your actual database saving logic
-  // Example: await fetch('your-api-endpoint', { method: 'POST', body: JSON.stringify(messageData) })
+  // Implementation would go here
   console.log('Saving message to database:', messageData);
+  // Example: await database.save(messageData);
 }
 
 const PORT = process.env.PORT || 3005;
 
 server.listen(PORT, () => {
-  console.log(`Chat server running on port ${PORT}`);
+  console.log(`Order chat server running on port ${PORT}`);
 });
 
 module.exports = { app, server, io };
