@@ -61,11 +61,10 @@ io.on('connection', (socket) => {
 
     const timestamp = new Date().toISOString();
     const messageData = {
-      id: Date.now().toString(),
-      room,
-      userId: connectionInfo.userId,
-      message,
+      id: 0,
+      sender_id: connectionInfo.userId,
       type: type || 'chat-message',
+      json: {message},
       timestamp,
       platform: platform || 'web'
     };
