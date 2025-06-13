@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
       sender_id: connectionInfo.userId,
       type: type || 'chat-message',
       json: JSON.stringify(message),
-      timestamp,-
+      timestamp,
       platform: platform || 'web'
     };
 
