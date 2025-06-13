@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
       id: 0,
       sender_id: connectionInfo.userId,
       type: type || 'chat-message',
-      json: JSON.stringify(message),
+      json: JSON.stringify({ message, sender_id: connectionInfo.userId }),
       timestamp,
       platform: platform || 'web'
     };
@@ -115,10 +115,7 @@ app.post('/api/send-order-message', async (req, res) => {
     id: timestamp.toString(), // Use timestamp as ID
     sender_id: userId.toString(), // Match Socket.IO structure
     type,
-    json: JSON.stringify({ 
-      message: typeof message === 'string' ? message : JSON.stringify(message), 
-      sender_id: userId.toString() 
-    }),
+    json: JSON.stringify(message),
     timestamp, // Use number format like Socket.IO
     platform
   };
