@@ -98,7 +98,7 @@ io.on('connection', (socket) => {
 });
 
 // REST API endpoint to send order messages from server
-app.post('/api/send-order-message', (req, res) => {
+app.post('/api/send-order-message', async (req, res) => {
   const { orderId, userId, message, platform = 'server', type = 'chat-message' } = req.body;
 
   if (!orderId || !userId || !message) {
@@ -108,19 +108,31 @@ app.post('/api/send-order-message', (req, res) => {
   }
 
   const room = `order_${orderId}`;
+  const timestamp = Number(new Date());
+  
+  // Use the same structure as Socket.IO handler
   const messageData = {
-    id: Date.now().toString(),
-    room,
-    userId,
-    message,
+    id: timestamp.toString(), // Use timestamp as ID
+    sender_id: userId.toString(), // Match Socket.IO structure
     type,
-    timestamp: new Date().toISOString(),
+    json: JSON.stringify({ 
+      message: typeof message === 'string' ? message : JSON.stringify(message), 
+      sender_id: userId.toString() 
+    }),
+    timestamp, // Use number format like Socket.IO
     platform
   };
 
   // Broadcast to order room
   io.to(room).emit('new_order_message', messageData);
   console.log(`Server message sent to ${room}:`, messageData);
+
+  // Save to database (since it's from server, we might want to save it too)
+  try {
+    await saveMessageToDatabase(messageData);
+  } catch (error) {
+    console.error('Failed to save message:', error);
+  }
 
   res.json({
     success: true,
