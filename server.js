@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
     };
 
     io.to(room).emit('new_order_message', messageData);
-    console.log(`Order message sent to ${room}:`, messageData);
+    console.log(`Order message from ${platform} sent to ${room}:`, messageData);
 
     if (callback) callback({ success: true });
 
