@@ -98,7 +98,9 @@ io.on('connection', (socket) => {
 });
 
 app.post('/api/send-order-message', async (req, res) => {
+  
   const { orderId, userId, message, platform = 'server', type = 'chat-message' } = req.body;
+  console.log(orderId, userId, message, platform);
 
   if (!orderId || !userId || !message) {
     return res.status(400).json({
