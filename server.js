@@ -99,7 +99,7 @@ io.on('connection', (socket) => {
 
 app.post('/api/send-order-message', async (req, res) => {
   
-  const { orderId, userId, message, platform = 'server', type = 'chat-message' } = req.body;
+  const { orderId, userId, message, platform = 'server', type = 'chat-message', chatId = null } = req.body;
   console.log(orderId, userId, message, platform);
 
   if (!orderId || !userId || !message) {
@@ -112,7 +112,7 @@ app.post('/api/send-order-message', async (req, res) => {
   const timestamp = Number(new Date());
 
   const messageData = {
-    id: timestamp.toString(),
+    id: chatId || timestamp.toString(),
     sender_id: userId.toString(),
     type,
     json: JSON.stringify(message),
