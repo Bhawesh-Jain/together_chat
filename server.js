@@ -38,6 +38,54 @@ io.on('connection', (socket) => {
     socket.emit('joined_order_room', { room, userId });
   });
 
+  socket.on('send_file_message', async (data, callback) => {
+    const connectionInfo = activeConnections.get(socket.id);
+    if (!connectionInfo) {
+      socket.emit('error', { message: 'Join a room before sending messages' });
+      return;
+    }
+
+    const { room, platform, type, userId, orderId } = connectionInfo;
+    const { identifier, read, received } = data;
+
+    if (!identifier) {
+      if (callback) callback({ error: 'Identifier is required' });
+      return;
+    }
+
+    const timestamp = Number(new Date());
+    const messageData = {
+      id: 0,
+      sender_id: connectionInfo.userId,
+      type: 'chat-file',
+      json: JSON.stringify({ identifier, read, received, sender_id: connectionInfo.userId }),
+      timestamp,
+      platform: platform || 'web'
+    };
+
+    io.to(room).emit('new_order_message', messageData);
+    console.log(`Order message from ${platform} sent to ${room}:`, messageData);
+
+    if (callback) callback({ success: true });
+
+    if (platform !== 'server') {
+      try {
+        const messageData = {
+          order_id: orderId,
+          sender_id: userId,
+          type: 'chat-file',
+          json: JSON.stringify({ identifier, read, received, sender_id: connectionInfo.userId }),
+          timestamp,
+          platform: platform || 'web'
+        };
+
+        await saveMessageToDatabase(messageData);
+      } catch (error) {
+        console.error('Failed to save message:', error);
+      }
+    }
+  });
+
   socket.on('send_order_message', async (data, callback) => {
     const connectionInfo = activeConnections.get(socket.id);
     if (!connectionInfo) {
@@ -98,7 +146,7 @@ io.on('connection', (socket) => {
 });
 
 app.post('/api/send-order-message', async (req, res) => {
-  
+
   const { orderId, userId, message, platform = 'server', type = 'chat-message', chatId = null } = req.body;
   console.log(orderId, userId, message, platform);
 
@@ -136,7 +184,8 @@ app.get('/health', (req, res) => {
 
 async function saveMessageToDatabase(messageData) {
   try {
-    const response = await fetch('http://194.238.18.114:3002/api/chat/save-message', {
+    // const response = await fetch('http://194.238.18.114:3002/api/chat/save-message', {
+    const response = await fetch('http://10.0.0.11:3000/api/chat/save-message', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
