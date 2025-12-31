@@ -71,6 +71,7 @@ io.on('connection', (socket) => {
     if (platform !== 'server') {
       try {
         const messageData = {
+          id: new Date().getTime(),
           order_id: orderId,
           sender_id: userId,
           type: 'chat-file',
