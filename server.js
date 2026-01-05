@@ -185,8 +185,8 @@ app.get('/health', (req, res) => {
 
 async function saveMessageToDatabase(messageData) {
   try {
-    // const response = await fetch('http://194.238.18.114:3002/api/chat/save-message', {
-    const response = await fetch('http://10.0.0.11:3000/api/chat/save-message', {
+    const response = await fetch('https://app.365together.in/api/chat/save-message', {
+    // const response = await fetch('http://10.0.0.11:3000/api/chat/save-message', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
